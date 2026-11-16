@@ -210,7 +210,7 @@ const LIB = {};
 for (const part in LIB_RAW) for (const [id,name,alias] of LIB_RAW[part])
   LIB['b-'+id] = {id:'b-'+id, name, part, alias, type: ASSIST_IDS.has(id) ? 'assist' : BW_IDS.has(id) ? 'bw' : part === '유산소' ? 'cardio' : 'weight'};
 const TYPES = { weight:'무게 (일반)', assist:'보조 (어시스트 머신)', bw:'맨몸 (+추가 중량)', cardio:'유산소 (강도·분)' };
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 
 /* ---------- 상태 ---------- */
 const data = { sessions:{}, routines:{}, custom:{}, settings:{} };
@@ -390,6 +390,14 @@ const sessionsSorted = () => Object.entries(data.sessions).map(([id,s])=>({id,..
 const validSets = sets => (sets||[]).filter(s => s.reps > 0);
 const profile = () => (data.settings && data.settings.profile) || {};
 const bodyW = () => +profile().bodyweight || null;
+/* 무게 단위: 기록은 항상 kg으로 저장하고 화면에서만 lb로 바꿔 보여줘요. 기본 단위 + 운동별 단위 */
+const LB = 2.20462262;
+const gUnit = () => profile().unit === 'lb' ? 'lb' : 'kg';
+const unitFor = exId => (profile().exUnits && profile().exUnits[exId]) || gUnit();
+const toU = (kg, u) => u === 'lb' ? kg * LB : kg;
+const fromU = (v, u) => u === 'lb' ? v / LB : v;
+const fw = (kg, u) => fmtNum(toU(kg, u));
+const inVal = (kg, u) => kg === null || kg === undefined ? '' : String(Math.round(toU(kg, u)*10)/10);
 const exTypeOf = (exId, part) => (exInfo(exId) && exInfo(exId).type) || ((part || exInfo(exId)?.part) === '유산소' ? 'cardio' : 'weight');
 /* 실제로 들어 올린 무게. 보조는 체중 − 보조, 맨몸은 체중 + 추가. 체중을 모르면 null/추가분만. */
 function effLoad(kg, t){
@@ -429,13 +437,14 @@ function autoTitle(doc){
 }
 const docTitle = doc => doc.title || autoTitle(doc) || '운동';
 const e1rm = (kg, reps) => reps <= 1 ? kg : kg*(1+reps/30);
-const setText = (s, t) => {
+const setText = (s, t, u = 'kg') => {
   const k = s.kg || 0;
-  if (t === 'assist') return `−${fmtNum(Math.abs(k))}×${s.reps}`;
-  if (t === 'bw') return `${k ? '+'+fmtNum(k) : 'BW'}×${s.reps}`;
-  return `${fmtNum(k)}×${s.reps}`;
+  if (t === 'cardio') return `${fmtNum(k)}×${s.reps}`;
+  if (t === 'assist') return `−${fw(Math.abs(k), u)}×${s.reps}`;
+  if (t === 'bw') return `${k ? '+'+fw(k, u) : 'BW'}×${s.reps}`;
+  return `${fw(k, u)}×${s.reps}`;
 };
-const setsText = (sets, t = 'weight') => validSets(sets).map(s => setText(s, t)).join(' · ');
+const setsText = (sets, t = 'weight', u = 'kg') => validSets(sets).map(s => setText(s, t, u)).join(' · ');
 
 /* 세션별 기록. top = 그날의 대표 무게(보조는 가장 적게 쓴 보조, 나머지는 가장 무거운 무게) */
 function exHistory(exId){
@@ -545,7 +554,7 @@ function renderLog(){
       group += `<button class="sess" data-act="open" data-kind="session" data-id="${s.id}">
         <div class="dbox"><b>${d.getDate()}</b><span>${WD[d.getDay()]}</span></div>
         <div style="min-width:0"><h3>${esc(docTitle(s))}</h3><div class="ex-line">${esc(exNames)||'운동 없음'}</div>
-        <div class="meta num">${st.ex}종목 · ${st.sets}세트 · ${fmtNum(st.vol)}kg · 약 ${fmtNum(st.kcal)}kcal${s.startedAt && s.finishedAt ? ' · '+fmtDur(s.finishedAt-s.startedAt) : s.startedAt ? ' · 운동 중' : ''}</div></div></button>`;
+        <div class="meta num">${st.ex}종목 · ${st.sets}세트 · ${fw(st.vol, gUnit())}${gUnit()} · 약 ${fmtNum(st.kcal)}kcal${s.startedAt && s.finishedAt ? ' · '+fmtDur(s.finishedAt-s.startedAt) : s.startedAt ? ' · 운동 중' : ''}</div></div></button>`;
     }
     flush();
   }
@@ -566,20 +575,21 @@ function renderEditor(v){
   const isS = v.type === 'session';
   const items = (doc.items||[]).map((it,i) => {
     const info = exInfo(it.exId), part = it.part || info?.part || '기타';
-    const t = exTypeOf(it.exId, part), L = LABELS[t];
+    const t = exTypeOf(it.exId, part), u = t === 'cardio' ? 'kg' : unitFor(it.exId), L = labelsFor(t, u);
     const last = isS ? lastFor(it.exId, v.id, doc.date) : lastFor(it.exId);
-    const hint = last ? `<button class="hint" data-act="useLast" data-i="${i}">지난 ${+last.date.slice(5,7)}/${+last.date.slice(8)} · <span class="num">${esc(setsText(last.sets, t))}</span> &nbsp;<b>그대로 채우기</b></button>` : '';
-    const note = t === 'assist' ? `<p class="type-note">보조 무게를 적어요. 보조가 가벼울수록 잘한 거예요.${bodyW() ? ` 실제로 드는 무게 = 체중 ${fmtNum(bodyW())}kg − 보조` : ''}</p>`
+    const hint = last ? `<button class="hint" data-act="useLast" data-i="${i}">지난 ${+last.date.slice(5,7)}/${+last.date.slice(8)} · <span class="num">${esc(setsText(last.sets, t, u))}</span> &nbsp;<b>그대로 채우기</b></button>` : '';
+    const note = t === 'assist' ? `<p class="type-note">보조 무게를 적어요. 보조가 가벼울수록 잘한 거예요.${bodyW() ? ` 실제로 드는 무게 = 체중 ${fw(bodyW(), u)}${u} − 보조` : ''}</p>`
       : t === 'bw' ? `<p class="type-note">맨몸이면 비워 두고, 중량을 달았으면 추가 무게만 적어요.</p>` : '';
     const nextJ = isS ? (it.sets||[]).findIndex(s => !s.done) : -1;
     const sets = (it.sets||[]).map((s,j)=>`<div class="set ${s.done?'done':''} ${j===nextJ && doc.startedAt && !doc.finishedAt ?'next':''}"><span class="no">${j+1}</span>
-      <input id="k-${i}-${j}" data-i="${i}" data-s="${j}" data-f="kg" inputmode="decimal" placeholder="${L.ph}" value="${s.kg ?? ''}" aria-label="${j+1}세트 ${L.aria}">
+      <input id="k-${i}-${j}" data-i="${i}" data-s="${j}" data-f="kg" inputmode="decimal" placeholder="${L.ph}" value="${inVal(s.kg, u)}" aria-label="${j+1}세트 ${L.aria}">
       <input id="r-${i}-${j}" data-i="${i}" data-s="${j}" data-f="reps" inputmode="numeric" placeholder="${t==='cardio'?'분':'회'}" value="${s.reps ?? ''}" aria-label="${j+1}세트 ${t==='cardio'?'시간':'횟수'}">
       ${isS ? `<button class="chk" data-act="doneSet" data-i="${i}" data-s="${j}" aria-pressed="${!!s.done}" aria-label="${j+1}세트 완료">${CHECK}</button>` : '<span></span>'}
       <button class="del" data-act="delSet" data-i="${i}" data-s="${j}" aria-label="${j+1}세트 삭제">×</button></div>`).join('');
     const rest = it.rest || prefRest();
     return `<section class="card ex">
       <div class="ex-head"><button class="ex-name" data-act="openEx" data-ex="${esc(it.exId)}">${esc(it.name)}<small>${esc(part)}</small></button>
+      ${t !== 'cardio' ? `<button class="rest-chip" data-act="toggleUnit" data-ex="${esc(it.exId)}" aria-label="이 운동의 무게 단위 바꾸기 (지금 ${u})">${u}</button>` : ''}
       <button class="rest-chip" data-act="restSheet" data-i="${i}" aria-label="휴식 시간 설정">휴식 ${fmtSec(rest)}</button>
       <button class="icon-btn" data-act="itemMenu" data-i="${i}" aria-label="운동 메뉴">⋯</button></div>
       ${note}${hint}
@@ -609,13 +619,16 @@ function liveHTML(doc){
   if (doc.date === today()) return `<div class="live"><div class="grow"><b>운동 시작하기</b><div class="s">세트를 끝낼 때마다 ✓를 누르면 휴식 타이머가 돌아가요.</div></div><button class="btn primary" data-act="startWorkout">시작</button></div>`;
   return '';
 }
-const LABELS = {
-  weight: { head:'KG', ph:'kg', aria:'무게' },
-  assist: { head:'보조 KG', ph:'보조', aria:'보조 무게' },
-  bw:     { head:'+KG', ph:'추가', aria:'추가 무게' },
-  cardio: { head:'강도', ph:'강도', aria:'강도' }
-};
-const summaryHTML = (st, kcal = true) => `<span><b>${st.ex}</b> 종목</span><span><b>${st.sets}</b> 세트</span><span><b>${fmtNum(st.vol)}</b> kg 볼륨</span>${kcal ? `<span>약 <b>${fmtNum(st.kcal)}</b> kcal</span>` : ''}`;
+function labelsFor(t, u){
+  const U = u.toUpperCase();
+  return {
+    weight: { head:U, ph:u, aria:'무게' },
+    assist: { head:'보조 '+U, ph:'보조', aria:'보조 무게' },
+    bw:     { head:'+'+U, ph:'추가', aria:'추가 무게' },
+    cardio: { head:'강도', ph:'강도', aria:'강도' }
+  }[t];
+}
+const summaryHTML = (st, kcal = true) => `<span><b>${st.ex}</b> 종목</span><span><b>${st.sets}</b> 세트</span><span><b>${fw(st.vol, gUnit())}</b> ${gUnit()} 볼륨</span>${kcal ? `<span>약 <b>${fmtNum(st.kcal)}</b> kcal</span>` : ''}`;
 
 function renderStats(){
   const used = {};
@@ -631,11 +644,11 @@ function statsList(used, ids){
   if (!ids.length) return `<div class="card empty"><b>아직 기록된 운동이 없어요</b>운동을 기록하면 여기서 기구별로 무게 변화를 표와 그래프로 볼 수 있어요.</div>`;
   const q = ui.statsQ.trim().toLowerCase().replace(/\s+/g,'');
   const rows = ids.filter(id => !q || (used[id].name + (exInfo(id)?.alias||'')).toLowerCase().replace(/\s+/g,'').includes(q)).map(id => {
-    const h = exHistory(id), t = exTypeOf(id, used[id].part);
-    const best = t === 'assist' ? ['최소 보조', `${fmtNum(Math.min(...h.map(r=>r.top)))}kg`]
+    const h = exHistory(id), t = exTypeOf(id, used[id].part), u = unitFor(id);
+    const best = t === 'assist' ? ['최소 보조', `${fw(Math.min(...h.map(r=>r.top)), u)}${u}`]
       : t === 'cardio' ? ['최장', `${Math.max(...h.map(r=>r.maxReps))}분`]
       : t === 'bw' && Math.max(...h.map(r=>r.top)) === 0 ? ['최다', `${Math.max(...h.map(r=>r.maxReps))}회`]
-      : ['최고', `${t==='bw'?'+':''}${fmtNum(Math.max(...h.map(r=>r.top)))}kg`];
+      : ['최고', `${t==='bw'?'+':''}${fw(Math.max(...h.map(r=>r.top)), u)}${u}`];
     return `<button class="ex-row" data-act="openEx" data-ex="${esc(id)}"><div class="grow"><b>${esc(used[id].name)}</b><span>${esc(used[id].part||'')} · ${h.length}회 · 마지막 ${used[id].last.slice(5).replace('-','/')}</span></div>
       <div class="best"><span class="label">${best[0]}</span><div class="num">${best[1]}</div></div></button>`;
   }).join('');
@@ -676,31 +689,31 @@ function renderEx(exId){
   const rows = exHistory(exId);
   const name = info?.name || (()=>{ for (const s of Object.values(data.sessions)) for (const it of s.items||[]) if (it.exId===exId) return it.name; return '운동'; })();
   const head = `<div class="topbar"><button class="icon-btn" data-act="back" aria-label="뒤로" style="font-size:30px">‹</button></div>
-    <div><span class="label">${esc(info?.part||'')}</span><h1 class="big">${esc(name)}</h1></div>`;
+    <div class="row" style="align-items:flex-end"><div class="grow"><span class="label">${esc(info?.part||'')}</span><h1 class="big">${esc(name)}</h1></div>${exTypeOf(exId) !== 'cardio' ? `<button class="rest-chip" data-act="toggleUnit" data-ex="${esc(exId)}" aria-label="이 운동의 무게 단위 바꾸기">${unitFor(exId)} ⇄</button>` : ''}</div>`;
   if (!rows.length) return `<div class="stack">${head}<div class="card empty"><b>아직 기록이 없어요</b>이 운동을 기록하면 무게 변화가 여기에 그래프로 쌓여요.</div></div>`;
-  const t = exTypeOf(exId), bw = bodyW();
+  const t = exTypeOf(exId), bw = bodyW(), u = t === 'cardio' ? 'kg' : unitFor(exId);
   const vals = k => rows.map(r=>r[k]).filter(v => v !== null && v !== undefined);
   const max = k => vals(k).length ? Math.max(...vals(k)) : null;
   const min = k => vals(k).length ? Math.min(...vals(k)) : null;
-  const nf = (v, u = 'kg') => v === null ? '–' : `${fmtNum(v)}<small>${u}</small>`;
+  const nf = v => v === null ? '–' : `${fw(v, u)}<small>${u}</small>`;
   const days = rows.length, totalSets = rows.reduce((a,r)=>a+r.sets.length,0);
   const dayTile = `<div class="card tile"><span class="label">기록한 날</span><div class="v">${days}<small>회 · ${totalSets}세트</small></div></div>`;
   let M, tiles, topHead, unitNote = '';
   if (t === 'assist'){
     const bestA = min('top');
-    M = { top:['보조 무게','kg'], ...(bw ? { eff:['실제 무게','kg'], vol:['볼륨','kg'] } : { maxReps:['최다 반복','회'] }) };
+    M = { top:['보조 무게',u], ...(bw ? { eff:['실제 무게',u], vol:['볼륨',u] } : { maxReps:['최다 반복','회'] }) };
     tiles = `<div class="card tile"><span class="label">최소 보조</span><div class="v">${nf(bestA)}</div></div>
       <div class="card tile"><span class="label">실제 드는 무게</span><div class="v">${bw ? nf(bw - bestA) : '<small>체중 입력 필요</small>'}</div></div>
       <div class="card tile"><span class="label">최다 반복</span><div class="v">${max('maxReps')}<small>회</small></div></div>${dayTile}`;
     topHead = '최소 보조';
-    unitNote = `보조 무게는 낮을수록 좋아요. ${bw ? `실제 무게 = 체중 ${fmtNum(bw)}kg − 보조로 계산해요.` : '체중을 입력하면 실제로 드는 무게와 볼륨도 보여요.'}`;
+    unitNote = `보조 무게는 낮을수록 좋아요. ${bw ? `실제 무게 = 체중 ${fw(bw, u)}${u} − 보조로 계산해요.` : '체중을 입력하면 실제로 드는 무게와 볼륨도 보여요.'}`;
   } else if (t === 'bw'){
-    M = { maxReps:['최다 반복','회'], top:['추가 무게','kg'], ...(bw ? { e1:['추정 1RM','kg'] } : {}) };
+    M = { maxReps:['최다 반복','회'], top:['추가 무게',u], ...(bw ? { e1:['추정 1RM',u] } : {}) };
     tiles = `<div class="card tile"><span class="label">최다 반복</span><div class="v">${max('maxReps')}<small>회</small></div></div>
       <div class="card tile"><span class="label">최고 추가 무게</span><div class="v">${nf(max('top'))}</div></div>
       <div class="card tile"><span class="label">총 반복</span><div class="v">${rows.reduce((a,r)=>a+r.reps,0)}<small>회</small></div></div>${dayTile}`;
     topHead = '+최고';
-    unitNote = bw ? `추정 1RM은 체중 ${fmtNum(bw)}kg + 추가 무게 기준이에요.` : '체중을 입력하면 체중을 포함한 1RM도 보여요.';
+    unitNote = bw ? `추정 1RM은 체중 ${fw(bw, u)}${u} + 추가 무게 기준이에요.` : '체중을 입력하면 체중을 포함한 1RM도 보여요.';
   } else if (t === 'cardio'){
     M = { reps:['총 시간','분'], top:['최고 강도',''] };
     tiles = `<div class="card tile"><span class="label">최장</span><div class="v">${max('maxReps')}<small>분</small></div></div>
@@ -710,21 +723,21 @@ function renderEx(exId){
   } else {
     const topRow = rows.find(r => r.top === max('top'));
     const topSet = topRow.sets.filter(s => (s.kg||0) === topRow.top).sort((a,b)=>b.reps-a.reps)[0];
-    M = { top:['최고중량','kg'], e1:['추정 1RM','kg'], vol:['볼륨','kg'] };
-    tiles = `<div class="card tile"><span class="label">최고중량</span><div class="v">${fmtNum(topRow.top)}<small>kg × ${topSet?.reps||'-'}</small></div></div>
+    M = { top:['최고중량',u], e1:['추정 1RM',u], vol:['볼륨',u] };
+    tiles = `<div class="card tile"><span class="label">최고중량</span><div class="v">${fw(topRow.top, u)}<small>${u} × ${topSet?.reps||'-'}</small></div></div>
       <div class="card tile"><span class="label">추정 1RM</span><div class="v">${nf(max('e1'))}</div></div>
       <div class="card tile"><span class="label">최고 볼륨</span><div class="v">${nf(max('vol'))}</div></div>${dayTile}`;
     topHead = '최고';
     unitNote = '추정 1RM은 무게 × (1 + 횟수/30) 공식으로 계산해요.';
   }
   const metric = M[ui.metric] ? ui.metric : Object.keys(M)[0];
-  const chartRows = rows.filter(r => r[metric] !== null && r[metric] !== undefined);
+  const chartRows = rows.filter(r => r[metric] !== null && r[metric] !== undefined).map(r => M[metric][1] === u && u === 'lb' ? { ...r, [metric]: toU(r[metric], u) } : r);
   const table = rows.slice().reverse().map(r => `<tr data-act="open" data-kind="session" data-id="${r.sid}">
       <td class="num" style="white-space:nowrap">${r.date.slice(2).replace(/-/g,'.')}</td>
-      <td class="num">${esc(setsText(r.sets, t))}</td>
-      <td class="r num" style="white-space:nowrap">${t==='bw'&&r.top?'+':''}${fmtNum(r.top)}${r.prTop?'<span class="pr">PR</span>':''}</td>
-      <td class="r num">${r.vol === null || t === 'cardio' ? '–' : fmtNum(r.vol)}</td></tr>`).join('');
-  const setHead = t === 'assist' ? '세트 (−보조kg×회)' : t === 'bw' ? '세트 (+kg×회)' : t === 'cardio' ? '세트 (강도×분)' : '세트 (kg×회)';
+      <td class="num">${esc(setsText(r.sets, t, u))}</td>
+      <td class="r num" style="white-space:nowrap">${t==='bw'&&r.top?'+':''}${t==='cardio' ? fmtNum(r.top) : fw(r.top, u)}${r.prTop?'<span class="pr">PR</span>':''}</td>
+      <td class="r num">${r.vol === null || t === 'cardio' ? '–' : fw(r.vol, u)}</td></tr>`).join('');
+  const setHead = t === 'assist' ? `세트 (−보조${u}×회)` : t === 'bw' ? `세트 (+${u}×회)` : t === 'cardio' ? '세트 (강도×분)' : `세트 (${u}×회)`;
   return `<div class="stack">${head}
     <div class="tiles">${tiles}</div>
     <div class="seg" role="group" aria-label="그래프 지표" style="grid-template-columns:repeat(${Object.keys(M).length},1fr)">${Object.entries(M).map(([k,[l]])=>`<button data-act="metric" data-m="${k}" aria-pressed="${metric===k}">${l}</button>`).join('')}</div>
@@ -777,6 +790,9 @@ function renderSheet(){
       <input class="field num" id="set-bw" inputmode="decimal" value="${bodyW() ?? ''}" placeholder="예: 72.5">
       <p class="muted" style="margin:0;font-size:13px">칼로리 추정(MET × 체중 × 운동 시간)과 어시스트·맨몸 운동의 실제 무게 계산에 써요. 칼로리는 운동 시간을 쟀으면 그 시간으로, 아니면 세트당 2.5분으로 어림잡아요.</p>
       <div class="row"><button class="btn grow" data-act="closeSheet">닫기</button><button class="btn grow primary" data-act="saveSettings">저장</button></div>
+      <span class="label">기본 무게 단위</span>
+      <div class="seg" role="group" aria-label="기본 무게 단위" style="grid-template-columns:1fr 1fr">${['kg','lb'].map(x=>`<button data-act="setUnit" data-u="${x}" aria-pressed="${gUnit()===x}">${x}</button>`).join('')}</div>
+      <p class="muted" style="margin:0;font-size:13px">운동마다 따로 바꾸려면 운동 이름 옆 <b>kg/lb</b> 버튼을 누르세요. 기록은 kg으로 저장되고 화면에서만 바뀌어 보여서, 언제든 바꿔도 기존 기록은 그대로예요.</p>
       <button class="btn block small" data-act="backup">데이터 백업 (JSON 복사)</button>
       <p class="muted num" style="margin:0;font-size:12px;text-align:center">버전 ${APP_VERSION}${NATIVE ? ' · 앱' : ''}</p>`;
   } else if (s.type === 'newEx'){
@@ -957,6 +973,18 @@ const actions = {
     data.settings.profile = { ...profile(), bodyweight: Math.round(v*10)/10, updatedAt: Date.now() };
     queueSave('settings', 'profile', 0); ui.sheet = null; render(); toast(`체중 ${fmtNum(v)}kg으로 저장했어요`);
   },
+  toggleUnit: el => {
+    const id = el.dataset.ex, next = unitFor(id) === 'kg' ? 'lb' : 'kg';
+    const exUnits = { ...(profile().exUnits || {}) };
+    if (next === gUnit()) delete exUnits[id]; else exUnits[id] = next;
+    data.settings.profile = { ...profile(), exUnits, updatedAt: Date.now() };
+    queueSave('settings', 'profile', 0); render();
+    toast(`${exInfo(id)?.name || '이 운동'}은 이제 ${next}로 보여요`);
+  },
+  setUnit: el => {
+    data.settings.profile = { ...profile(), unit: el.dataset.u, updatedAt: Date.now() };
+    queueSave('settings', 'profile', 0); render();
+  },
   applyUpdate: () => { flushNative(); try{ NATIVE && NATIVE.reloadApp(); }catch(e){} },
   copyBackup: () => {
     const ta = document.getElementById('backup-txt');
@@ -975,8 +1003,12 @@ $app.addEventListener('input', ev => {
   const c = curDoc(); if (!c || !c.doc) return;
   if (el.dataset.f){
     const v = el.value.replace(',', '.').trim();
-    const n = v === '' ? null : Number(v);
-    c.doc.items[+el.dataset.i].sets[+el.dataset.s][el.dataset.f] = (n === null || isNaN(n)) ? null : n;
+    let n = v === '' ? null : Number(v);
+    if (n !== null && isNaN(n)) n = null;
+    const it = c.doc.items[+el.dataset.i];
+    /* lb로 적은 무게는 kg으로 바꿔 저장 */
+    if (n !== null && el.dataset.f === 'kg' && exTypeOf(it.exId, it.part) !== 'cardio') n = Math.round(fromU(n, unitFor(it.exId)) * 10000) / 10000;
+    it.sets[+el.dataset.s][el.dataset.f] = n;
     touch(c);
     document.getElementById('summary').innerHTML = summaryHTML(docStats(c.doc));
   } else if (el.dataset.field === 'title' || el.dataset.field === 'note'){
