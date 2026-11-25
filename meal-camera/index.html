@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>식단 카메라</title>
-<meta name="theme-color" content="#EEF3EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#EEF1EC" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141815" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -17,62 +17,66 @@
    COLOUR sage #EEF3EA ground, white cards, ink #1F2420, coral #FF6B5B accent, dark sage buttons
    TYPE Pretendard only (800 / 600 / 400)
    LAYOUT phone: blob + question, photo card, buttons, settings; wide: left column intro + settings, right photo */
-:root{--bg:#EEF3EA;--card:#FFFFFF;--ink:#1F2420;--sub:#6B746A;--line:#DCE5D6;--chip:#E2EBDD;--btn:#4E5A4C;--btnInk:#FFFFFF;--coral:#FF6B5B;--halo:#DCE8D5}
-@media(prefers-color-scheme:dark){:root{--bg:#141815;--card:#1D221E;--ink:#EEF2EC;--sub:#9AA597;--line:#2C332D;--chip:#262D27;--btn:#DDE6D8;--btnInk:#1A1F1B;--halo:#232B24}}
+:root{--bg:#EEF1EC;--card:#FFFFFF;--ink:#1F2420;--sub:#6B746A;--line:#DCE5D6;--chip:#E2EBDD;--btn:#4E5A4C;--btnInk:#FFFFFF;--accent:#2D4BFF;--green:#2FB45A}
+@media(prefers-color-scheme:dark){:root{--bg:#141815;--card:#1D221E;--ink:#EEF2EC;--sub:#9AA597;--line:#2C332D;--chip:#262D27;--btn:#DDE6D8;--btnInk:#1A1F1B;--accent:#6E86FF}}
 *{box-sizing:border-box;min-width:0}
 [hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 16px/1.5 Pretendard,-apple-system,system-ui,"Noto Sans KR",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip;-webkit-tap-highlight-color:transparent}
 .page{max-width:1040px;margin:0 auto;padding-top:calc(env(safe-area-inset-top,0px) + 28px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px);padding-left:max(5vw,20px,env(safe-area-inset-left,0px));padding-right:max(5vw,20px,env(safe-area-inset-right,0px));display:grid;gap:20px;grid-template-areas:"intro" "pick" "prev" "box"}
-.intro{grid-area:intro;text-align:center;display:grid;justify-items:center;gap:6px}
-.blob{width:104px;height:104px;cursor:pointer}
+.intro{grid-area:intro;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;padding-top:8px}
+.date{margin:0 0 12px;font-weight:500;font-size:13px;color:var(--sub);letter-spacing:-.01em}
+.date b{font-weight:200;font-size:13px;color:var(--sub);margin:0 6px}
+.blob{width:118px;height:118px;cursor:pointer;margin-right:-6px}
 .blob svg{width:100%;height:100%;display:block}
 .blob.hop svg{animation:hop .45s cubic-bezier(.3,1.5,.5,1)}
 @keyframes hop{0%{transform:translateY(8px) scale(.94)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.blob.hop svg{animation:none}}
-h1{margin:8px 0 0;font-weight:800;font-size:26px;line-height:1.25;letter-spacing:-.02em}
-.intro p{margin:0;color:var(--sub);font-size:15px}
+h1{margin:0;font-size:clamp(30px,8.8vw,42px);line-height:1.16;letter-spacing:-.035em}
+h1 .l{display:block;font-weight:200}
+h1 .b{display:block;font-weight:600}
 .prev{grid-area:prev}
 .stage{background:var(--card);border-radius:20px;padding:8px;position:relative;box-shadow:0 1px 0 var(--line)}
 .stage img{display:block;width:100%;height:auto;max-height:66svh;object-fit:contain;border-radius:14px}
 .tag{position:absolute;top:18px;left:18px;background:rgba(31,36,32,.72);color:#fff;font-weight:600;font-size:12px;padding:3px 10px;border-radius:99px}
 .acts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:10px}
-.btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:54px;border-radius:14px;font:600 16px Pretendard,system-ui,sans-serif;text-decoration:none;cursor:pointer;border:0;padding:0 20px;color:var(--ink);background:var(--card)}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:54px;border-radius:14px;font:500 16px Pretendard,system-ui,sans-serif;text-decoration:none;cursor:pointer;border:0;padding:0 20px;color:var(--ink);background:var(--card)}
 .btn.main{background:var(--btn);color:var(--btnInk)}
 .btn:active{opacity:.85}
 .btn[aria-disabled=true]{opacity:.4;pointer-events:none}
-.hint{font-size:13px;color:var(--sub);margin:10px 2px 0;text-align:center}
+.hint{font-size:13px;font-weight:300;color:var(--sub);margin:10px 2px 0;text-align:center}
 .thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:12px;padding-bottom:4px}
 .thumbs button{flex:0 0 auto;width:56px;height:56px;padding:0;border-radius:12px;border:2px solid transparent;overflow:hidden;background:var(--card);cursor:pointer}
-.thumbs button[aria-current=true]{border-color:var(--coral)}
+.thumbs button[aria-current=true]{border-color:var(--accent)}
 .thumbs img{width:100%;height:100%;object-fit:cover;display:block}
 .pick{grid-area:pick;display:grid;gap:8px}
 .pick input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .box{grid-area:box;background:var(--card);border-radius:20px;padding:20px;display:grid;gap:20px}
-.lab{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:14px;margin-bottom:8px}
-.lab em{font-style:normal;font-weight:400;color:var(--sub);font-size:13px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:500;font-size:14px;margin-bottom:10px}
+.lab em{font-style:normal;font-weight:300;color:var(--sub);font-size:13px}
 .chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.chips button{min-height:44px;border-radius:12px;border:0;background:var(--chip);color:var(--sub);font:600 15px Pretendard,system-ui,sans-serif;cursor:pointer;padding:0}
-.chips button[aria-pressed=true]{background:var(--coral);color:#fff}
-input[type=datetime-local],input[type=text]{width:100%;min-height:48px;font:400 16px Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 14px}
-input:focus-visible,button:focus-visible,.btn:focus-visible,.pick label:focus-within{outline:2px solid var(--coral);outline-offset:2px}
+.chips button{min-height:44px;border-radius:12px;border:0;background:var(--chip);color:var(--sub);font:300 15px Pretendard,system-ui,sans-serif;cursor:pointer;padding:0}
+.chips button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}
+input[type=datetime-local],input[type=text]{width:100%;min-height:48px;font:300 16px Pretendard,system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 14px}
+input:focus-visible,button:focus-visible,.btn:focus-visible,.pick label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ghost{min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--sub);font:500 14px Pretendard,system-ui,sans-serif;cursor:pointer}
+.ghost{min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--sub);font:300 14px Pretendard,system-ui,sans-serif;cursor:pointer}
 .err{background:#FFE9E6;color:#B3261E;border-radius:12px;padding:10px 12px;font-size:14px}
 @media(min-width:760px){
   .page{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);grid-template-areas:"intro prev" "pick prev" "box prev";align-items:start;column-gap:32px;padding-top:48px}
-  .intro{text-align:left;justify-items:start}
   .prev{position:sticky;top:24px}
-  h1{font-size:30px}
+  h1{font-size:44px}
 }
 </style>
 </head>
 <body>
 <div class="page">
   <section class="intro">
+    <div class="itext">
+      <p class="date" id="today"></p>
+      <h1><span class="l">오늘 <span id="hlMeal">점심</span>,</span><span class="b">뭐 먹었어요?</span></h1>
+    </div>
     <div class="blob" id="blob" role="img" aria-label="캐릭터"></div>
-    <h1 id="hl">오늘 점심, 뭐 먹었어요?</h1>
-    <p id="today"></p>
   </section>
 
   <section class="prev">
@@ -105,40 +109,47 @@ input:focus-visible,button:focus-visible,.btn:focus-visible,.pick label:focus-wi
 <script>
 {
 const MEALS=['아침','점심','간식','저녁','야식'],DAYS=['일','월','화','수','목','금','토'];
-const CORAL='#FF6B5B',INK='#1F2420';
+const INK='#1F2420';
 const $=id=>document.getElementById(id);
 const out=$('out'),thumbs=$('thumbs'),memo=$('memo'),when=$('when'),err=$('err'),blob=$('blob');
 let items=[],cur=0,outURL=null,outBlob=null,mood='';
 
-/* one coral blob, 120x120; mood changes only the eyes */
+/* cobalt bean, 120x120: flat body, half-lidded eyes, green accent; mood moves the lids */
+const BLUE='#2D4BFF',GREEN='#2FB45A';
+const LIDS={cool:[[-2,-3],[-3,-2]],sleep:[[6,6],[6,6]],happy:[[-17,-17],[-17,-17]]};
 function blobParts(m){
-  const p=[['c',60,60,56,'halo'],['p','M64 22 C66 12 74 8 82 10 C80 18 74 23 64 22Z','#7FA36F'],['c',60,66,40,CORAL]];
-  if(m==='sleep')p.push(['s','M42 64 Q47 69 52 64',INK,3],['s','M68 64 Q73 69 78 64',INK,3]);
-  else if(m==='happy')p.push(['s','M42 66 Q47 60 52 66',INK,3],['s','M68 66 Q73 60 78 66',INK,3]);
-  else p.push(['e',47,63,4,5.2,INK],['e',73,63,4,5.2,INK],['c',48.3,61,1.4,'#fff'],['c',74.3,61,1.4,'#fff']);
-  p.push(['s','M55 76 Q60 80 65 76',INK,2.6]);
-  return p;
+  const L=LIDS[m]||LIDS.cool;
+  return[
+   ['c',34,32,15,BLUE],
+   ['p','M20 68 C16 38 38 16 62 18 C88 20 106 38 104 64 C102 94 80 108 56 106 C32 104 22 92 20 68Z',BLUE],
+   ['p','M30 92 C44 104 74 106 90 94 C80 104 66 108 54 107 C42 106 34 100 30 92Z','#1F36C9'],
+   ['eye',46,62,12,14,L[0],[52,67]],
+   ['eye',77,60,12,14,L[1],[83,65]],
+   ['e',44,15,5,10,GREEN,-38],['p','M38 20 Q37 24 35 26','#1F36C9']
+  ];
 }
-const svgBlob=m=>'<svg viewBox="0 0 120 120" aria-hidden="true">'+blobParts(m).map(p=>{
-  const f=c=>c==='halo'?'var(--halo)':c;
-  if(p[0]==='c')return`<circle cx="${p[1]}" cy="${p[2]}" r="${p[3]}" fill="${f(p[4])}"/>`;
-  if(p[0]==='e')return`<ellipse cx="${p[1]}" cy="${p[2]}" rx="${p[3]}" ry="${p[4]}" fill="${p[5]}"/>`;
+const lidPath=(cx,cy,rx,ry,l)=>`M${cx-rx-2} ${cy-ry-2} H${cx+rx+2} V${cy+l[1]} L${cx-rx-2} ${cy+l[0]} Z`;
+let uid=0;
+const svgBlob=m=>{const id='k'+(uid++);return'<svg viewBox="0 0 120 120" aria-hidden="true">'+blobParts(m).map((p,i)=>{
+  if(p[0]==='c')return`<circle cx="${p[1]}" cy="${p[2]}" r="${p[3]}" fill="${p[4]}"/>`;
+  if(p[0]==='e')return`<ellipse cx="${p[1]}" cy="${p[2]}" rx="${p[3]}" ry="${p[4]}" fill="${p[5]}" transform="rotate(${p[6]||0} ${p[1]} ${p[2]})"/>`;
   if(p[0]==='p')return`<path d="${p[1]}" fill="${p[2]}"/>`;
-  return`<path d="${p[1]}" fill="none" stroke="${p[2]}" stroke-width="${p[3]}" stroke-linecap="round"/>`;
-}).join('')+'</svg>';
+  const [,cx,cy,rx,ry,l,pp]=p;
+  return`<clipPath id="${id}${i}"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#fff"/><g clip-path="url(#${id}${i})"><circle cx="${pp[0]}" cy="${pp[1]}" r="5.4" fill="#111"/><path d="${lidPath(cx,cy,rx,ry,l)}" fill="#111"/></g>`;
+}).join('')+'</svg>'};
 function drawBlob(x,m,ox,oy,size){
   const s=size/120;x.save();x.translate(ox,oy);x.scale(s,s);
   for(const p of blobParts(m)){
-    if(p[4]==='halo')continue;
     x.beginPath();
     if(p[0]==='c'){x.arc(p[1],p[2],p[3],0,Math.PI*2);x.fillStyle=p[4];x.fill()}
-    else if(p[0]==='e'){x.ellipse(p[1],p[2],p[3],p[4],0,0,Math.PI*2);x.fillStyle=p[5];x.fill()}
+    else if(p[0]==='e'){x.ellipse(p[1],p[2],p[3],p[4],(p[6]||0)*Math.PI/180,0,Math.PI*2);x.fillStyle=p[5];x.fill()}
     else if(p[0]==='p'){x.fillStyle=p[2];x.fill(new Path2D(p[1]))}
-    else{x.strokeStyle=p[2];x.lineWidth=p[3];x.lineCap='round';x.stroke(new Path2D(p[1]))}
+    else{const [,cx,cy,rx,ry,l,pp]=p;x.save();x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);x.fillStyle='#fff';x.fill();x.clip();
+      x.beginPath();x.arc(pp[0],pp[1],5.4,0,Math.PI*2);x.fillStyle='#111';x.fill();x.fill(new Path2D(lidPath(cx,cy,rx,ry,l)));x.restore()}
   }
   x.restore();
 }
-const moodOf=meal=>meal==='야식'?'sleep':'open';
+const moodOf=meal=>meal==='야식'?'sleep':'cool';
 function setBlob(m){if(m===mood)return;mood=m;blob.innerHTML=svgBlob(m);hop()}
 function hop(){blob.classList.remove('hop');void blob.offsetWidth;blob.classList.add('hop')}
 blob.addEventListener('click',hop);
@@ -149,7 +160,7 @@ const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T
 const fname=it=>{const d=it.date;return`식단_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}_${it.meal}.jpg`};
 
 $('meals').innerHTML=MEALS.map(m=>`<button type="button" data-m="${m}" aria-pressed="false">${m}</button>`).join('');
-{const n=new Date();$('today').textContent=`${n.getMonth()+1}월 ${n.getDate()}일 ${DAYS[n.getDay()]}요일`}
+{const n=new Date();$('today').innerHTML=`${n.getMonth()+1}월 ${n.getDate()}일<b>/</b>${DAYS[n.getDay()]}요일`}
 
 function exifDate(buf){
   try{
@@ -187,7 +198,7 @@ function sampleImg(){
   x.fillStyle='#EFB083';x.beginPath();x.moveTo(600,510);x.quadraticCurveTo(770,430,830,540);x.quadraticCurveTo(720,650,600,510);x.fill();
   const g=['#7FA36F','#93B883','#6A8F5C'];
   for(let i=0;i<26;i++){x.fillStyle=g[i%3];x.beginPath();x.ellipse(520+((i*29)%170),610+((i*41)%90),34,18,i*.7,0,7);x.fill()}
-  x.fillStyle=CORAL;x.beginPath();x.arc(560,640,20,0,7);x.fill();x.beginPath();x.arc(640,660,18,0,7);x.fill();
+  x.fillStyle='#FF6B5B';x.beginPath();x.arc(560,640,20,0,7);x.fill();x.beginPath();x.arc(640,660,18,0,7);x.fill();
   return c;
 }
 
@@ -201,28 +212,23 @@ function draw(it){
   const x=c.getContext('2d');
   x.drawImage(img,0,0,Wd,H);
   x.fillStyle='#FFFFFF';x.fillRect(0,H,Wd,bar);
-  const d=it.date,p=u*5,base=H+u*11.4;
+  const d=it.date,p=u*5,base=H+u*12;
   x.textBaseline='alphabetic';x.fillStyle=INK;
-  x.font=`800 ${u*9}px ${F}`;
+  x.font=`200 ${u*11}px ${F}`;
   const tm=`${pad(d.getHours())}:${pad(d.getMinutes())}`;x.fillText(tm,p,base);
-  const tw=x.measureText(tm).width,dx=p+tw+u*3;
-  x.font=`600 ${u*3.4}px ${F}`;x.fillStyle=INK;
-  x.fillText(`${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`,dx,base-u*4.6);
-  x.font=`400 ${u*3}px ${F}`;x.fillStyle='#6B746A';
-  x.fillText(`${d.getFullYear()}`,dx,base);
-  const bs=u*11;drawBlob(x,moodOf(it.meal),Wd-p-bs+u*.5,H+u*2.6,bs);
-  x.font=`600 ${u*3.4}px ${F}`;
-  const mw=x.measureText(it.meal).width,pw=mw+u*4,ph=u*6,px=Wd-p-bs-u*2-pw,py=base-ph+u*.4;
-  x.fillStyle=CORAL;x.beginPath();x.roundRect(px,py,pw,ph,ph/2);x.fill();
-  x.fillStyle='#fff';x.fillText(it.meal,px+u*2,py+ph*.68);
-  if(memoTxt){x.fillStyle='#4A5249';x.font=`400 ${u*3.6}px ${F}`;x.fillText(memoTxt,p,H+u*18.6,Wd-p*2)}
-  x.fillStyle='#E6ECE2';x.fillRect(0,H,Wd,Math.max(1,u*.25));
+  const tw=x.measureText(tm).width,dx=p+tw+u*3.6;
+  x.fillStyle='#2D4BFF';x.fillRect(dx-u*1.8,base-u*8.2,Math.max(1,u*.25),u*8.2);
+  x.fillStyle=INK;x.font=`600 ${u*4.4}px ${F}`;x.fillText(it.meal,dx,base-u*4.4);
+  x.font=`300 ${u*3.3}px ${F}`;x.fillStyle='#6B746A';
+  x.fillText(`${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`,dx,base);
+  const bs=u*14;drawBlob(x,moodOf(it.meal),Wd-p-bs+u*1.5,H+u*1.4,bs);
+  if(memoTxt){x.fillStyle='#4A5249';x.font=`300 ${u*3.6}px ${F}`;x.fillText(memoTxt,p,H+u*19,Wd-p*2)}
   c.toBlob(b=>{if(!b)return;if(outURL)URL.revokeObjectURL(outURL);outBlob=b;outURL=URL.createObjectURL(b);out.src=outURL;const sv=$('saveBtn');sv.href=outURL;sv.download=fname(it)},'image/jpeg',.9);
 }
 
 function show(){
   const it=items[cur];if(!it)return;
-  $('hl').textContent=`오늘 ${it.meal}, 뭐 먹었어요?`;
+  $('hlMeal').textContent=it.meal;
   setBlob(moodOf(it.meal));
   document.querySelectorAll('#meals button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===it.meal));
   when.value=toLocal(it.date);memo.value=it.memo;
