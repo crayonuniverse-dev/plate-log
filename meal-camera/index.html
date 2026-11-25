@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>식단 카메라</title>
+<meta name="theme-color" content="#e5432b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday, quick tool used 4-5 times a day
+   IDEA a lunch-tray receipt strip: photo on top, printed time tag underneath
+   PICTURE the stamped photo itself, large, live as you change meal/time/memo
+   COLOUR white ground, espresso ink, tomato red lead, leaf green support
+   TYPE Black Han Sans display + Noto Sans KR text
+   LAYOUT laptop/Fold inner: photo left 60%, controls right; phone: title, photo, buttons, controls */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#15100d);--ink:light-dark(#201612,#f6eee8);--soft:light-dark(#7a6a62,#b9aaa1);--line:light-dark(#eadfd8,#3a2c25);--panel:light-dark(#fbf5f1,#1f1814);--red:#e5432b;--red2:light-dark(#fde6e1,#3d1d16);--leaf:light-dark(#2f8a4c,#5cc47c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(5vw,16px,env(safe-area-inset-left,0px));padding-right:max(5vw,16px,env(safe-area-inset-right,0px))}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font:400 clamp(32px,6vw,44px)/1.05 "Black Han Sans",sans-serif;letter-spacing:-.02em;margin:0}
+h1 b{color:var(--red);font-weight:400}
+header p{margin:0;color:var(--soft);font-size:14px}
+.grid{display:grid;gap:20px}
+@media(min-width:760px){.grid{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);align-items:start}.side{position:sticky;top:16px}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;display:grid;place-items:center;min-height:300px;position:relative}
+.stage img{display:block;width:100%;height:auto;max-height:72svh;object-fit:contain;border-radius:10px;-webkit-touch-callout:default}
+.tag{position:absolute;top:22px;left:22px;background:var(--ink);color:var(--bg);font-size:13px;padding:3px 10px;border-radius:99px}
+.hint{font-size:14px;color:var(--soft);margin:10px 2px 0}
+.hint strong{color:var(--ink)}
+.thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:12px;padding-bottom:4px}
+.thumbs button{flex:0 0 auto;width:64px;height:64px;padding:0;border-radius:10px;border:2px solid transparent;overflow:hidden;background:var(--panel);cursor:pointer}
+.thumbs button[aria-current=true]{border-color:var(--red)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.pick{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:18px}
+.pick label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:84px;border-radius:16px;cursor:pointer;font-weight:700;font-size:17px;text-align:center;padding:10px}
+.pick label small{font-weight:400;font-size:13px;opacity:.85}
+.pick .cam{background:var(--red);color:#fff}
+.pick .gal{background:var(--panel);border:1px solid var(--line)}
+.pick label:active{transform:scale(.98)}
+.pick input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:16px}
+.fld>span{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:500;margin-bottom:6px}
+.fld>span em{font-style:normal;color:var(--soft);font-weight:400;font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{min-height:44px;padding:0 16px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 16px "Noto Sans KR",sans-serif;cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+input[type=datetime-local],input[type=text]{width:100%;min-height:46px;font:16px "Noto Sans KR",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 12px}
+input:focus-visible,button:focus-visible,.pick label:focus-within{outline:3px solid color-mix(in srgb,var(--red) 55%,transparent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 15px "Noto Sans KR",sans-serif;cursor:pointer}
+.err{background:var(--red2);border-radius:12px;padding:10px 12px;font-size:14px}
+.src{color:var(--leaf);font-weight:500}
+.acts{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:10px;margin-top:12px}
+.acts button,.acts a{display:flex;align-items:center;justify-content:center;min-height:56px;border-radius:14px;font:700 17px "Noto Sans KR",sans-serif;text-decoration:none;cursor:pointer;border:1px solid var(--line)}
+.acts .send{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.acts .save{background:var(--bg);color:var(--ink)}
+.acts [aria-disabled=true]{opacity:.4;pointer-events:none}
+.ok{color:var(--leaf);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>식단 <b>카메라</b></h1>
+    <p>찍은 시간이 사진 아래에 자동으로 찍혀요</p>
+  </header>
+
+  <div class="grid">
+    <section>
+      <div class="stage">
+        <img id="out" alt="시간이 찍힌 식단 사진">
+        <span class="tag" id="sampleTag">예시</span>
+      </div>
+      <div class="acts">
+        <button class="send" id="shareBtn" type="button">클로드로 보내기</button>
+        <a class="save" id="saveBtn" download="식단.jpg" href="#">저장</a>
+      </div>
+      <p class="hint" id="actHint">사진을 찍거나 고르면 아래에 시간이 찍혀요. 보내기를 누르고 공유 목록에서 <strong>Claude</strong>를 고르세요.</p>
+      <div class="thumbs" id="thumbs" hidden></div>
+    </section>
+
+    <aside class="side">
+      <div class="pick">
+        <label class="cam">사진 찍기<small>카메라 열기</small><input id="camIn" type="file" accept="image/*" capture="environment"></label>
+        <label class="gal">갤러리에서<small>여러 장 가능</small><input id="galIn" type="file" accept="image/*" multiple></label>
+      </div>
+      <div class="box">
+        <div class="fld">
+          <span>끼니 <em>시간에 맞춰 자동 선택</em></span>
+          <div class="chips" id="meals"></div>
+        </div>
+        <div class="fld">
+          <span>먹은 시간 <em id="srcNote"></em></span>
+          <input id="when" type="datetime-local" step="60">
+        </div>
+        <div class="fld">
+          <span>메모 <em>선택</em></span>
+          <input id="memo" type="text" maxlength="40" placeholder="예: 현미밥 반 공기, 외식" autocomplete="off">
+        </div>
+        <div class="row">
+          <button class="ghost" id="nowBtn" type="button">지금 시간으로</button>
+          <button class="ghost" id="resetBtn" type="button">원래 시간으로</button>
+        </div>
+        <div class="err" id="err" hidden></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+{
+const MEALS=['아침','점심','간식','저녁','야식'];
+const DAYS=['일','월','화','수','목','금','토'];
+const $=id=>document.getElementById(id);
+const out=$('out'),thumbs=$('thumbs'),memo=$('memo'),when=$('when'),err=$('err');
+let items=[],cur=0,outURL=null,outBlob=null;
+
+const autoMeal=d=>{const h=d.getHours();if(h>=5&&h<10)return'아침';if(h>=10&&h<15)return'점심';if(h>=15&&h<17)return'간식';if(h>=17&&h<21)return'저녁';return'야식'};
+const pad=n=>String(n).padStart(2,'0');
+const fname=it=>{const d=it.date;return `식단_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}_${it.meal}.jpg`};
+const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+$('meals').innerHTML=MEALS.map(m=>`<button type="button" data-m="${m}" aria-pressed="false">${m}</button>`).join('');
+
+function exifDate(buf){
+  try{
+    const v=new DataView(buf);if(v.getUint16(0)!==0xFFD8)return null;
+    let o=2;
+    while(o<v.byteLength-4){
+      const m=v.getUint16(o);
+      if(m===0xFFE1&&v.getUint32(o+4)===0x45786966){
+        const t=o+10,le=v.getUint16(t)===0x4949;
+        const g16=p=>v.getUint16(p,le),g32=p=>v.getUint32(p,le);
+        const read=ifd=>{const n=g16(ifd),r={};for(let i=0;i<n;i++){const e=ifd+2+i*12;r[g16(e)]=e}return r};
+        const str=e=>{const c=g32(e+4),off=c>4?t+g32(e+8):e+8;let s='';for(let i=0;i<c-1;i++)s+=String.fromCharCode(v.getUint8(off+i));return s};
+        const a=read(t+g32(t+4));let dt=null;
+        if(a[0x8769]){const ex=read(t+g32(a[0x8769]+8));if(ex[0x9003])dt=str(ex[0x9003]);else if(ex[0x9004])dt=str(ex[0x9004])}
+        if(!dt&&a[0x0132])dt=str(a[0x0132]);
+        const k=dt&&dt.match(/(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d)/);
+        return k?new Date(+k[1],k[2]-1,+k[3],+k[4],+k[5]):null;
+      }
+      if((m&0xFF00)!==0xFF00)break;
+      o+=2+v.getUint16(o+2);
+    }
+  }catch(e){}
+  return null;
+}
+
+function loadImg(file){
+  return new Promise((res,rej)=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>res(i);i.onerror=()=>{URL.revokeObjectURL(u);rej()};i.src=u});
+}
+
+function sampleImg(){
+  const c=document.createElement('canvas');c.width=1200;c.height=900;const x=c.getContext('2d');
+  x.fillStyle='#c9a27c';x.fillRect(0,0,1200,900);
+  for(let i=0;i<14;i++){x.fillStyle=i%2?'#bf966f':'#c49c75';x.fillRect(0,i*66,1200,30)}
+  x.fillStyle='rgba(0,0,0,.18)';x.beginPath();x.ellipse(620,480,380,330,0,0,7);x.fill();
+  x.fillStyle='#fbfaf7';x.beginPath();x.ellipse(600,450,380,330,0,0,7);x.fill();
+  x.fillStyle='#efece6';x.beginPath();x.ellipse(600,450,300,255,0,0,7);x.fill();
+  x.fillStyle='#f4efe2';x.beginPath();x.ellipse(470,400,130,105,0,0,7);x.fill();
+  for(let i=0;i<60;i++){x.fillStyle=i%3?'#e9e1cc':'#8d6a4c';x.beginPath();x.ellipse(380+((i*37)%180),330+((i*53)%140),9,5,i,0,7);x.fill()}
+  x.fillStyle='#d9824a';x.beginPath();x.moveTo(600,470);x.quadraticCurveTo(760,400,820,500);x.quadraticCurveTo(720,600,600,470);x.fill();
+  x.fillStyle='#b8612f';for(let i=0;i<5;i++){x.fillRect(640+i*32,470+i*8,10,40)}
+  const g=['#3f9a52','#5cb85c','#2f7d43'];
+  for(let i=0;i<26;i++){x.fillStyle=g[i%3];x.beginPath();x.ellipse(520+((i*29)%170),560+((i*41)%90),34,18,i*.7,0,7);x.fill()}
+  x.fillStyle='#e5432b';x.beginPath();x.arc(560,590,22,0,7);x.fill();x.beginPath();x.arc(640,610,20,0,7);x.fill();
+  return c;
+}
+
+function draw(it){
+  const img=it.img,w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+  const s=Math.min(1,1600/Math.max(w,h)),W=Math.round(w*s),H=Math.round(h*s);
+  const u=Math.max(W,H*.75)/100;
+  const memoTxt=it.memo.trim();
+  const bar=Math.round(u*15+(memoTxt?u*6:0));
+  const c=document.createElement('canvas');c.width=W;c.height=H+bar;
+  const x=c.getContext('2d');
+  x.drawImage(img,0,0,W,H);
+  x.fillStyle='#201612';x.fillRect(0,H,W,bar);
+  x.fillStyle='#e5432b';x.fillRect(0,H,W,Math.max(3,u*.6));
+  const d=it.date,p=u*4,base=H+u*11;
+  x.textBaseline='alphabetic';
+  x.fillStyle='#ffffff';x.font=`${u*9}px "Black Han Sans",sans-serif`;
+  const tm=`${pad(d.getHours())}:${pad(d.getMinutes())}`;x.fillText(tm,p,base);
+  const tw=x.measureText(tm).width;
+  x.font=`700 ${u*3.6}px "Noto Sans KR",sans-serif`;
+  x.fillText(`${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`,p+tw+u*3,base-u*4.4);
+  x.fillStyle='#c9b8ae';x.font=`400 ${u*3}px "Noto Sans KR",sans-serif`;
+  x.fillText(`${d.getFullYear()}년`,p+tw+u*3,base);
+  x.font=`700 ${u*4.4}px "Noto Sans KR",sans-serif`;
+  const mw=x.measureText(it.meal).width,pw=mw+u*6,ph=u*8,px=W-p-pw,py=base-u*6.6;
+  x.fillStyle='#e5432b';x.beginPath();x.roundRect(px,py,pw,ph,ph/2);x.fill();
+  x.fillStyle='#fff';x.fillText(it.meal,px+u*3,py+ph*.68);
+  if(memoTxt){x.fillStyle='#f6eee8';x.font=`500 ${u*3.8}px "Noto Sans KR",sans-serif`;x.fillText(memoTxt,p,H+u*18.5,W-p*2)}
+  c.toBlob(b=>{if(!b)return;if(outURL)URL.revokeObjectURL(outURL);outBlob=b;outURL=URL.createObjectURL(b);out.src=outURL;const sv=$('saveBtn');sv.href=outURL;sv.download=fname(it)},'image/jpeg',.9);
+}
+
+function show(){
+  const it=items[cur];if(!it)return;
+  document.querySelectorAll('#meals button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===it.meal));
+  when.value=toLocal(it.date);memo.value=it.memo;
+  $('srcNote').innerHTML=`<span class="src">${it.src}</span>`;
+  $('sampleTag').hidden=!it.sample;
+  $('shareBtn').setAttribute('aria-disabled',!!it.sample);$('saveBtn').setAttribute('aria-disabled',!!it.sample);
+  thumbs.hidden=items.length<2;
+  thumbs.innerHTML=items.map((t,i)=>`<button type="button" data-i="${i}" aria-current="${i===cur}" aria-label="${i+1}번째 사진"><img src="${t.thumb}" alt=""></button>`).join('');
+  draw(it);
+}
+
+async function addFiles(files,fromCam){
+  err.hidden=true;const added=[],bad=[];
+  for(const f of files){
+    let img;try{img=await loadImg(f)}catch(e){bad.push(f.name||'사진');continue}
+    let d=null,src;
+    try{d=exifDate(await f.slice(0,262144).arrayBuffer())}catch(e){}
+    if(d)src='사진 정보의 촬영 시간';
+    else if(fromCam){d=new Date();src='지금 찍은 시간'}
+    else{d=new Date(f.lastModified||Date.now());src='파일 저장 시간 (확인해 주세요)'}
+    added.push({img,date:d,orig:new Date(d),meal:autoMeal(d),memo:'',src,thumb:img.src});
+  }
+  if(added.length){
+    added.sort((a,b)=>a.date-b.date);
+    items=items.filter(i=>!i.sample).concat(added);cur=items.length-added.length;show();
+  }
+  if(bad.length){err.textContent=`열 수 없는 사진이 있어요 (${bad.length}장). 갤럭시 카메라 설정에서 '고효율 사진(HEIF)'이 켜져 있으면 끄고 다시 찍어 주세요.`;err.hidden=false}
+}
+
+$('camIn').addEventListener('change',e=>{addFiles([...e.target.files],true);e.target.value=''});
+$('galIn').addEventListener('change',e=>{addFiles([...e.target.files],false);e.target.value=''});
+$('meals').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!items[cur])return;items[cur].meal=b.dataset.m;show()});
+when.addEventListener('change',()=>{const it=items[cur];if(!it||!when.value)return;const d=new Date(when.value);if(isNaN(d))return;const wasAuto=it.meal===autoMeal(it.date);it.date=d;if(wasAuto)it.meal=autoMeal(d);it.src='직접 고친 시간';show()});
+let mt;memo.addEventListener('input',()=>{const it=items[cur];if(!it)return;it.memo=memo.value;clearTimeout(mt);mt=setTimeout(()=>draw(it),250)});
+$('nowBtn').addEventListener('click',()=>{const it=items[cur];if(!it)return;it.date=new Date();it.meal=autoMeal(it.date);it.src='지금 시간';show()});
+$('resetBtn').addEventListener('click',()=>{const it=items[cur];if(!it)return;it.date=new Date(it.orig);it.meal=autoMeal(it.date);it.src='원래 시간';show()});
+$('shareBtn').addEventListener('click',async()=>{
+  const it=items[cur],h=$('actHint');if(!it||it.sample||!outBlob)return;
+  const file=new File([outBlob],fname(it),{type:'image/jpeg'});
+  if(!(navigator.canShare&&navigator.canShare({files:[file]}))){h.textContent='이 브라우저는 바로 보내기를 지원하지 않아요. 저장한 뒤 클로드에 올려 주세요.';return}
+  try{await navigator.share({files:[file]});h.innerHTML='<span class="ok">보냈어요.</span> 다음 끼니도 찍어 주세요.'}
+  catch(e){if(e.name!=='AbortError')h.textContent='보내기에 실패했어요. 저장한 뒤 클로드에 올려 주세요.'}
+});
+thumbs.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cur=+b.dataset.i;show()});
+
+const start=()=>{
+  const sc=sampleImg(),d=new Date();d.setHours(12,34,0,0);
+  items=[{img:sc,date:d,orig:new Date(d),meal:'점심',memo:'현미밥 반 공기, 닭가슴살 샐러드',src:'예시 사진',thumb:sc.toDataURL('image/jpeg',.6),sample:true}];
+  cur=0;show();
+};
+(document.fonts&&document.fonts.load?Promise.all([document.fonts.load('40px "Black Han Sans"'),document.fonts.load('700 20px "Noto Sans KR"'),document.fonts.load('500 20px "Noto Sans KR"')]).catch(()=>{}):Promise.resolve()).then(start,start);
+}
+</script>
+<script>
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
